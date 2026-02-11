@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice <%= invoiceNo %></title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .card {
+            max-width: 1000px;
+            margin: 0 auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .card-content {
+            padding: 20px;
+        }
+        .flex {
+            display: flex;
+        }
+        .items-center {
+            align-items: center;
+        }
+        .justify-between {
+            justify-content: space-between;
+        }
+        .gap-4 {
+            gap: 1rem;
+        }
+        .logo {
+            width: 64px;
+            height: 64px;
+            background-color: #0066cc;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+        .company-info {
+            margin-left: 1rem;
+        }
+        .company-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0;
+        }
+        .company-address {
+            font-size: 0.875rem;
+            color: #666;
+            margin: 0;
+        }
+        .invoice-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .info-item {
+            margin-bottom: 0.5rem;
+        }
+        .info-label {
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+        .services-header {
+            background-color: rgba(0, 102, 204, 0.1);
+            padding: 0.5rem 1rem;
+            text-align: center;
+            font-weight: 600;
+            margin: 1.5rem 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .font-bold {
+            font-weight: bold;
+        }
+        .terms {
+            margin-top: 1.5rem;
+            font-size: 0.875rem;
+        }
+        .terms-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .terms-content {
+            color: #666;
+        }
+        .footer {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 0.875rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="card-header">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="logo">
+                        <span>Auto</span>
+                    </div>
+                    <div class="company-info">
+                        <h1 class="company-name">Autoconnect Transport</h1>
+                        <p class="company-address">135 San Sebastian Street, San Antonio Valley 6 Sucat</p>
+                        <p class="company-address">Parañaque City</p>
+                        <p class="company-address">09279969364 | 09474512785</p>
+                    </div>
+                </div>
+                <div class="invoice-title">Invoice</div>
+            </div>
+            
+            <div class="grid">
+                <div>
+                    <div class="info-item">
+                        <span class="info-label">Company:</span>
+                        <span><%= company %></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Contact:</span>
+                        <span><%= contact %></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Booking Officer:</span>
+                        <span><%= bookingOfficer %></span>
+                    </div>
+                </div>
+                <div>
+                    <div class="info-item">
+                        <span class="info-label">Invoice No:</span>
+                        <span><%= invoiceNo %></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Date:</span>
+                        <span><%= date %></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Date of Trip:</span>
+                        <span><%= dateOfTrip %></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Driver:</span>
+                        <span><%= driver %></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Vehicle:</span>
+                        <span><%= unit %></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Client:</span>
+                        <span><%= guest %></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-content">
+            <div class="services-header">
+                SERVICES
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description of Service</th>
+                        <th class="text-right">No. of Days</th>
+                        <th class="text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% items.forEach(function(item) { %>
+                        <tr>
+                            <td><%= item.date %></td>
+                            <td><%= item.description %></td>
+                            <td class="text-right"><%= item.units %></td>
+                            <td class="text-right">₱<%= (item.amount || 0).toFixed(2) %></td>
+                        </tr>
+                    <% }); %>
+                    <tr>
+                        <td colspan="3" class="text-right font-bold">
+                            TOTAL:
+                        </td>
+                        <td class="text-right font-bold">
+                            ₱<%= items.reduce((sum, item) => sum + item.amount, 0).toFixed(2) %>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="terms">
+                <div class="terms-title">Terms and Conditions:</div>
+                <p class="terms-content">
+                    A Cancellation Period of 24 hours prior to the scheduled date is required. Failure to meet this Terms & Conditions will not exempt you from it.
+                    Fixed booking or reservation dates will be distributed but will not guarantee you a confirmed seat if necessary, a follow up message after 24 hours will be interpreted as a cancellation of the reservation.
+                  </p>
+                </p>
+                <p class="terms-content">
+                    Payment Terms: A minimum of a 50% non-refundable down payment via bank deposit upon an agreed date is required to confirm your reservation. The remaining balance should be settled before the scheduled date, otherwise your order will be forfeited..
+                </p>
+            </div>
+
+            <div class="footer">
+                AutoConnect Transport | 135 San Sebastian St. SAV 6 Sucat Pque | 0926619314 | otocnct@gmail.com
+            </div>
+        </div>
+    </div>
+</body>
+</html>
