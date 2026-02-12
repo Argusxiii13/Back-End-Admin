@@ -358,7 +358,6 @@ app.post("/api/generate-invoice", async (req, res) => {
 
 app.get('/api/admin/sales/car-details', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
-  console.log('Received request for car details with role:', req.query.role);
 
   // Select the appropriate pool based on the role if necessary
   const pool = dbPool;
@@ -2352,8 +2351,6 @@ app.get('/api/sales/overview-chart', async (req, res) => {
     `, [lastSevenDays, currentDate]);
 
     // Debugging: Log raw query results
-    console.log('Confirmed/Finished Revenue:', confirmedFinishedRevenueResult.rows);
-    console.log('Cancelled Revenue:', cancelledRevenueResult.rows);
 
     // Combine results into a single array
     const revenueMap = {};
@@ -2452,7 +2449,6 @@ app.get('/api/admin/sales/invoice-data', async (req, res) => {
 
 app.get('/api/admin/admins', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
-  console.log('Received request for car details with role:', req.query.role);
 
   // Select the appropriate pool based on the role if necessary
   const pool = dbPool;
@@ -2460,7 +2456,6 @@ app.get('/api/admin/admins', async (req, res) => {
   try {
       const result = await pool.query('SELECT * FROM admin_users');
       const users = result.rows;
-      console.log(users)
       res.json(users);
   } catch (error) {
       console.error('Error fetching users data:', error);
