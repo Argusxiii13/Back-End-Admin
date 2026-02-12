@@ -28,8 +28,10 @@ app.use(express.static(path.join(__dirname, 'admin')));
 
 // Database connection - 
 //const pool = new Pool({host: "localhost", user: 'postgres', password: 'root', database: 'autoconnect', port: 5432});
-const PostgrePool = new Pool({ connectionString: process.env.NEON_URL,})
-const NeonPool = new Pool ({ connectionString: process.env.NEON_URL,})
+
+
+const dbPool = new Pool({ connectionString: process.env.NEON_URL });
+
 
 
 app.use(express.json({ limit: '50mb' }));
@@ -60,7 +62,7 @@ const validatePassword = (password) => {
 };
 
 // Example of a connection check
-NeonPool.connect((err) => {
+dbPool.connect((err) => {
   if (err) {
     console.error('Error connecting to the database:', err);
     return;
@@ -70,7 +72,7 @@ NeonPool.connect((err) => {
 
 // Close the pool on app termination
 process.on('SIGINT', () => {
-  NeonPool.end(() => {
+  dbPool.end(() => {
     console.log('PostgreSQL connection pool closed.');
     process.exit(0);
   });
@@ -83,7 +85,7 @@ app.listen(PORT, () => {
 });
 
 const logAction = async (admin_id, admin_name, admin_role, action, details) => {
-  const pool = admin_role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
   const client = await pool.connect();
   
   const sanitizeValue = (value) => {
@@ -148,7 +150,7 @@ const logAction = async (admin_id, admin_name, admin_role, action, details) => {
 
 // Middleware to send notif
 const notifyClient = async (booking_id, user_id, title, message, admin_role) => {
-  const pool = admin_role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
   const client = await pool.connect();
 
   try {
@@ -228,7 +230,7 @@ app.put('/api/admin/booking/confirm/:id', (req, res) => {
   The AutoConnect Transport Team`;
 
   // Perform the query using callback
-  const pool = admin_role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
   pool.query(
     'UPDATE bookings SET status = $1, cancel_fee = $2, cancel_reason = $3, cancel_date = $4, officer =$5 WHERE booking_id = $6 RETURNING *',
     ['Confirmed', 0, "None", null, admin_name, booking_id],
@@ -359,7 +361,7 @@ app.get('/api/admin/sales/car-details', async (req, res) => {
   console.log('Received request for car details with role:', req.query.role);
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query('SELECT * FROM cars_view');
@@ -374,7 +376,7 @@ app.get('/api/admin/sales/car-details', async (req, res) => {
 
 app.get('/api/admin/dashboard/new-bookings', async (req, res) => {
   const { role } = req.query;
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
     const currentTimestamp = new Date();
@@ -399,7 +401,7 @@ app.get('/api/admin/dashboard/new-users', async (req, res) => {
     const { role } = req.query;
 
   // Determine which pool to use
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
     const today = new Date().toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD format
 
     // Query to count new users created today
@@ -422,7 +424,7 @@ app.get('/api/admin/dashboard/new-feedback-count', async (req, res) => {
     const { role } = req.query;
 
   // Determine which pool to use
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
     // Get today's date in 'YYYY-MM-DD' format
     const today = new Date().toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD format
 
@@ -448,7 +450,7 @@ app.get('/api/admin/dashboard/today-revenue', async (req, res) => {
     const { role } = req.query;
 
   // Determine which pool to use
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
     // Get today's date in 'YYYY-MM-DD' format
     const today = new Date().toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD format
 
@@ -471,9 +473,7 @@ app.get('/api/admin/dashboard/today-revenue', async (req, res) => {
 app.get('/api/admin/dashboard/category-distribution', async (req, res) => {
 
   const { role } = req.query;
-  const pool = role === 'Owner' ? PostgrePool : NeonPool
-
-  try {
+  const pool = dbPool;try {
       const today = new Date();
       const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
       const formattedDate = today.toLocaleDateString('en-CA', options).split('/').reverse().join('-'); // Format as 'YYYY-MM-DD'
@@ -499,7 +499,7 @@ app.get('/api/admin/dashboard/category-distribution', async (req, res) => {
 
 app.get('/api/admin/booking/bookings-table', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query(`
@@ -516,7 +516,7 @@ app.get('/api/admin/booking/bookings-table', async (req, res) => {
 
 app.get('/api/admin/booking/statistics', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const totalBookingsQuery = `
@@ -560,7 +560,7 @@ app.get('/api/admin/booking/car-dropdown', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query('SELECT id, model FROM cars'); // Adjust the query as needed
@@ -580,7 +580,7 @@ app.get('/api/admin/booking/receipt-retrieve/:bookingId', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
     const query = `
@@ -618,7 +618,7 @@ app.get('/api/admin/booking/details/:bookingId', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const query = `
@@ -702,7 +702,7 @@ app.put('/api/admin/booking/update/:bookingId', async (req, res) => {
       ];
 
 
-      const pool = admin_role === 'Owner' ? PostgrePool : NeonPool;
+      const pool = dbPool;
       const result = await pool.query(query, values);
 
       if (result.rowCount === 0) {
@@ -726,7 +726,7 @@ app.get('/api/admin/users/users-table', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query('SELECT * FROM users_view');
@@ -743,7 +743,7 @@ app.get('/api/admin/users/image/:user_id', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const query = `
@@ -781,7 +781,7 @@ app.get('/api/admin/users/statistics', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       // Total Users
@@ -849,7 +849,7 @@ app.put('/api/admin/booking/notify-price', async (req, res) => {
   if (!booking_id || typeof price !== 'number') {
       return res.status(400).json({ error: 'Booking ID and price must be provided and price must be a number' });
   }
-  const pool = admin_role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
   try {
       const result = await pool.query(
           'UPDATE bookings SET price = $1 WHERE booking_id = $2 RETURNING *',
@@ -877,7 +877,7 @@ app.get('/api/admin/fleet/fleet-table', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query('SELECT * FROM cars_view');
@@ -895,7 +895,7 @@ app.get('/api/admin/fleet/statistics', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       // Total vehicles count
@@ -958,7 +958,7 @@ app.get('/api/admin/fleet/booking-stats', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       // Total bookings
@@ -1001,7 +1001,7 @@ app.get('/api/admin/fleet/vehicle-details/:id', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       // Fetch the vehicle details
@@ -1031,7 +1031,7 @@ app.get('/api/admin/fleet/dropdowns-value', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       // Fetch distinct values for each category
@@ -1109,7 +1109,7 @@ app.post('/api/admin/fleet/add', async (req, res) => {
       plate_num,
       driver
   ];
-  const pool = admin_role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
   try {
       const result = await pool.query(sql, values);
       const platenum = result.rows[0].plate_num; // Get the inserted vehicle ID
@@ -1147,7 +1147,7 @@ app.get('/api/admin/sales/sales-statistics', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       // Total Revenue: Price from Confirmed and Finished bookings + Cancel Fee from Cancelled bookings
@@ -1195,7 +1195,7 @@ app.get('/api/admin/sales/all-data', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query('SELECT * FROM bookings_view');
@@ -1211,7 +1211,7 @@ app.get('/api/admin/analytics/bookings-data', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query('SELECT * FROM bookings_view');
@@ -1227,7 +1227,7 @@ app.get('/api/admin/analytics/users-data', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query('SELECT * FROM users_view');
@@ -1243,7 +1243,7 @@ app.get('/api/admin/analytics/cars-data', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query('SELECT * FROM cars_view');
@@ -1259,7 +1259,7 @@ app.get('/api/admin/analytics/feedback-data', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query(`
@@ -1287,7 +1287,7 @@ app.get('/api/admin/booking/cars', (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   const sql = "SELECT * FROM cars";
   pool.query(sql, (err, results) => {
@@ -1363,7 +1363,7 @@ app.put('/api/admin/booking/pending/:id', (req, res) => {
   Best regards,
   The AutoConnect Transport Team`;
 
-  const pool = admin_role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   // Perform the query using callback
   pool.query(
@@ -1410,7 +1410,7 @@ app.put('/api/admin/booking/finish/:id', (req, res) => {
   
   Best regards,  
   The AutoConnect Transport Team`;
-  const pool = admin_role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
   pool.query(
     'UPDATE bookings SET status = $1, cancel_fee = $2, cancel_reason = $3, cancel_date = $4, expenses = $5, officer = $6 WHERE booking_id = $7 RETURNING *',
     ['Finished', 0, "None", null, expenses || 0, admin_name, booking_id], // Set expenses to 0 if not provided
@@ -1460,7 +1460,7 @@ app.put('/api/admin/booking/confirm/:id', (req, res) => {
   The AutoConnect Transport Team`;
 
   // Perform the query using callback
-  const pool = admin_role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
   pool.query(
     'UPDATE bookings SET status = $1, cancel_fee = $2, cancel_reason = $3, cancel_date = $4, officer =$5 WHERE booking_id = $6 RETURNING *',
     ['Confirmed', 0, "None", null, admin_name, booking_id],
@@ -1512,7 +1512,7 @@ app.put('/api/admin/booking/cancel/:booking_id', async (req, res) => {
   
   Best regards,
   The AutoConnect Transport Team`;
-  const pool = admin_role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
   // Validate the booking_id and cancel_reason
   if (!booking_id) {
     console.error('Booking ID is required.');
@@ -1625,7 +1625,7 @@ app.put('/api/admin/fleet/update/:id', async (req, res) => {
     driver,
     vehicleId
   ];
-  const pool = admin_role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
   try {
       const result = await pool.query(sql, values);
       const updatedCar = result.rows[0]; 
@@ -1658,7 +1658,7 @@ app.post('/api/admin/login-otp', async (req, res) => {
 
   try {
     // Check if the email exists in the admin users table
-    const result = await PostgrePool.query('SELECT * FROM admin_users WHERE email = $1', [email]);
+    const result = await dbPool.query('SELECT * FROM admin_users WHERE email = $1', [email]);
 
     if (result.rows.length === 0) {
       // Email not found in admin users
@@ -1733,14 +1733,14 @@ app.post('/api/admin/verify-login-otp', async (req, res) => {
       // Verify OTP
       if (storedOtpData.otp === otp) {
           // Corrected line: added a comma between name and role
-          const userResult = await PostgrePool.query('SELECT id, email, name, role FROM admin_users WHERE email = $1', [email]);
+          const userResult = await dbPool.query('SELECT id, email, name, role FROM admin_users WHERE email = $1', [email]);
 
           if (userResult.rows.length === 0) {
               return res.status(404).json({ message: 'Admin user not found' });
           }
 
           const token = crypto.randomBytes(32).toString('hex'); // Simple token generation
-          await PostgrePool.query('UPDATE admin_users SET last_token = $1 WHERE email = $2', [token, email]);
+          await dbPool.query('UPDATE admin_users SET last_token = $1 WHERE email = $2', [token, email]);
           delete otps[email]; // Remove OTP after successful validation
 
           return res.status(200).json({ 
@@ -1771,7 +1771,7 @@ app.post('/api/validate-token', async (req, res) => {
   try {
     // Simple token validation 
     // In a real-world scenario, you'd do more robust validation
-    const result = await PostgrePool.query(
+    const result = await dbPool.query(
       'SELECT id, email, role FROM admin_users WHERE last_token = $1', 
       [token]
     );
@@ -1810,7 +1810,7 @@ app.get('/api/admin/setting/audit-logs', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query(`
@@ -1827,7 +1827,7 @@ app.get('/api/admin/setting/audit-logs', async (req, res) => {
 
 app.get('/api/admin/setting/notifications', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query(`
@@ -1848,7 +1848,7 @@ app.post('/api/admin/setting/notifications/mark-as-read', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   if (!Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({ error: 'Invalid request: ids must be a non-empty array' });
@@ -1876,7 +1876,7 @@ app.get('/api/admin/feedback/feedback-table', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query(`
@@ -1895,7 +1895,7 @@ app.get('/api/admin/feedback/feedback-stats', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query(`
@@ -1914,7 +1914,7 @@ app.get('/api/admin/feedback/booking-stats', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query(`
@@ -1933,7 +1933,7 @@ app.get('/api/admin/feedback/cars-detail', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query(`
@@ -1950,7 +1950,7 @@ app.get('/api/admin/feedback/cars-detail', async (req, res) => {
 
 app.get('/api/admin/dashboard/booking-today', async (req, res) => {
   const { role } = req.query;
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
   try {
       const result = await pool.query(`
           SELECT * FROM bookings_view
@@ -1970,7 +1970,7 @@ app.get('/api/admin/dashboard/booking-today', async (req, res) => {
 
 app.get('/api/admin/dashboard/cars-details', async (req, res) => {
   const { role } = req.query;
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
   try {
     const result = await pool.query(`
         SELECT * FROM cars_view
@@ -1987,8 +1987,7 @@ app.get('/api/admin/dashboard/cars-details', async (req, res) => {
 app.get('/api/admin/dashboard/earnings-today', async (req, res) => {
 
   const { role } = req.query;
-  const pool = role === 'Owner' ? PostgrePool : NeonPool
-  try {
+  const pool = dbPool;try {
       const result = await pool.query(`
           SELECT b.booking_id, c.plate_num, b.price
           FROM bookings_view b
@@ -2008,8 +2007,7 @@ app.get('/api/admin/dashboard/earnings-today', async (req, res) => {
 
 app.get('/api/admin/dashboard/task', async (req, res) => {
   const { role } = req.query;
-  const pool = role === 'Owner' ? PostgrePool : NeonPool
-  try {
+  const pool = dbPool;try {
     const result = await pool.query(`
         SELECT * FROM tasks
         ORDER BY id DESC;
@@ -2025,8 +2023,7 @@ app.get('/api/admin/dashboard/task', async (req, res) => {
 app.delete('/api/admin/dashboard/task/:id', async (req, res) => {
   const taskId = parseInt(req.params.id, 10); // Get the task ID from the request parameters
   const { role } = req.query; // Get the role from the query parameters
-  const pool = role === 'Owner' ? PostgrePool : NeonPool
-  try {
+  const pool = dbPool;try {
       const result = await pool.query('DELETE FROM tasks WHERE id = $1', [taskId]);
       
       if (result.rowCount === 0) {
@@ -2045,7 +2042,7 @@ app.post('/api/admin/dashboard/task', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   if (!task || !date) {
       return res.status(400).json({ error: 'Task and date are required' });
@@ -2067,7 +2064,7 @@ app.post('/api/admin/dashboard/task', async (req, res) => {
 
 app.get('/api/admin/booking/pie-chart', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
 
@@ -2092,7 +2089,7 @@ app.get('/api/admin/booking/pie-chart', async (req, res) => {
 
 app.get('/api/admin/booking/line-graph', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
   try {
       const result = await pool.query(`
           SELECT DATE(created_at) AS date, status, COUNT(*) AS count 
@@ -2114,7 +2111,7 @@ app.get('/api/admin/user/pie-chart', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const now = new Date();
@@ -2147,7 +2144,7 @@ app.get('/api/admin/user/line-graph', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const currentYear = new Date().getFullYear();
@@ -2206,7 +2203,7 @@ app.get('/api/admin/fleet/pie-chart', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query(`
@@ -2233,7 +2230,7 @@ app.get('/api/admin/fleet/line-graph', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query(`
@@ -2280,7 +2277,7 @@ app.get('/api/admin/sales/sales-table', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query(`
@@ -2301,7 +2298,7 @@ app.get('/api/admin/feedback/feedback-piechart', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query(`
@@ -2425,7 +2422,7 @@ app.delete('/api/admin/fleet/fleet-table/:id', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       await pool.query('DELETE FROM cars_view WHERE id = $1', [id]);
@@ -2438,7 +2435,7 @@ app.delete('/api/admin/fleet/fleet-table/:id', async (req, res) => {
 
 app.get('/api/admin/sales/invoice-data', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query(`
@@ -2458,7 +2455,7 @@ app.get('/api/admin/admins', async (req, res) => {
   console.log('Received request for car details with role:', req.query.role);
 
   // Select the appropriate pool based on the role if necessary
-  const pool = role === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   try {
       const result = await pool.query('SELECT * FROM admin_users');
@@ -2476,7 +2473,7 @@ app.post('/api/admin/admins', async (req, res) => {
   const { role: userRole } = req.query; // Get the role from the query parameters
 
   // Select the appropriate pool based on the role
-  const pool = userRole === 'Owner' ? PostgrePool : NeonPool;
+  const pool = dbPool;
 
   // Validate input data
   if (!name || !email || !role) {
@@ -2501,7 +2498,7 @@ app.post('/api/admin/admins', async (req, res) => {
 app.delete('/api/admin/admins/:id', async (req, res) => {
   const id = req.params.id;
   try {
-    const result = await PostgrePool.query('DELETE FROM admin_users WHERE id = $1', [id]);
+    const result = await dbPool.query('DELETE FROM admin_users WHERE id = $1', [id]);
     
     if (result.rowCount === 0) {
         return res.status(404).json({ error: 'User not found' });
