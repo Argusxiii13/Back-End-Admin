@@ -2449,12 +2449,21 @@ app.get('/api/admin/sales/invoice-data', async (req, res) => {
 
 app.get('/api/admin/admins', async (req, res) => {
   const { role } = req.query; // Get the role from the query parameters
+  const demoEmail = (process.env.DEMO_ADMIN_EMAIL || 'autoconnectdemo13@gmail.com').toLowerCase();
 
   // Select the appropriate pool based on the role if necessary
   const pool = dbPool;
 
   try {
-      const result = await pool.query('SELECT * FROM admin_users');
+      const result = await pool.query(
+        `SELECT *
+         FROM admin_users
+         ORDER BY
+           CASE WHEN LOWER(email) = $1 THEN 0 ELSE 1 END,
+           created_at ASC,
+           id ASC`,
+        [demoEmail]
+      );
       const users = result.rows;
       res.json(users);
   } catch (error) {
