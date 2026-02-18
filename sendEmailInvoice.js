@@ -3,7 +3,6 @@ const dotenv = require('dotenv');
 const { generateInvoicePDF } = require('./lib/generatePDF.js');
 dotenv.config();
 
-// SMTP configuration
 const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = process.env.SMTP_PORT;
 const SMTP_SECURE = process.env.SMTP_SECURE === 'true';
@@ -84,10 +83,8 @@ function generateEmailHTML(options) {
 
 async function sendEmailInvoice(invoiceData, clientEmail) {
     try {
-        // Generate PDF invoice
         const pdfBuffer = await generateInvoicePDF(invoiceData);
 
-        // Set up Nodemailer transporter
         const transporter = nodemailer.createTransport({
             host: SMTP_HOST,
             port: SMTP_PORT,
@@ -98,7 +95,6 @@ async function sendEmailInvoice(invoiceData, clientEmail) {
             },
         });
 
-        // Custom message
         const messageContent = `
         Hello,\n\n
         Great news! Your booking (ID: ${invoiceData.invoiceNo}) has been successfully confirmed. We’re thrilled to have the opportunity to serve you and ensure your journey goes smoothly.\n\n
@@ -108,7 +104,6 @@ async function sendEmailInvoice(invoiceData, clientEmail) {
         The AutoConnect Transport Team
         `;
 
-        // Email options for the invoice
         const mailOptions = {
             from: SMTP_USER,
             to: clientEmail,
@@ -126,7 +121,6 @@ async function sendEmailInvoice(invoiceData, clientEmail) {
             ],
         };
 
-        // Send the email with the PDF attachment
         await transporter.sendMail(mailOptions);
         console.log('Invoice email sent to client successfully');
     } catch (error) {
