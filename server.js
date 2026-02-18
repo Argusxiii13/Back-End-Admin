@@ -10,16 +10,17 @@ const sendEmailHandler = require("./sendEmail.js");
 const sendEmailNotif = require("./sendEmailNotif");
 const { generateInvoicePDF } = require('./lib/generatePDF');
 const sendEmailInvoice = require('./sendEmailInvoice.js'); // Ensure the path is correct
-const allowedOrigin = process.env.ALLOWED_ORIGIN;
 const axios = require('axios');
 const dotenv = require('dotenv');
 dotenv.config();
+const allowedOrigin = process.env.ALLOWED_ORIGIN;
 const nodemailer = require("nodemailer");
 const bodyParser = require('body-parser');
 const app = express();
 const PORT = 5174;
 const crypto = require('crypto'); // To generate random OTP
 const otps = {};
+const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '10mb';
 
 
 app.use(express.static(path.join(__dirname, 'admin')));
@@ -27,8 +28,35 @@ app.use(express.static(path.join(__dirname, 'admin')));
 
 const dbPool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+const configuredOrigins = (allowedOrigin || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
+
+const mergedOrigins = Array.from(new Set([...configuredOrigins, ...defaultOrigins]));
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (mergedOrigins.includes('*') || mergedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
+};
+
 const httpServer = http.createServer(app);
-const socketCorsOrigin = allowedOrigin && allowedOrigin !== '*' ? allowedOrigin : '*';
+const socketCorsOrigin = mergedOrigins.includes('*') ? '*' : mergedOrigins;
 const io = new Server(httpServer, {
   cors: {
     origin: socketCorsOrigin,
@@ -44,12 +72,10 @@ io.on('connection', (socket) => {
 });
 
 
-app.use(express.urlencoded({ extended: true }));
-app.use(cors());
-app.use(cors({
-  origin: allowedOrigin === '*' ? '*' : allowedOrigin
-}));
-app.use(bodyParser.json()); // Ensure this is included
+app.use(express.urlencoded({ extended: true, limit: requestBodyLimit }));
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+app.use(bodyParser.json({ limit: requestBodyLimit })); // Ensure this is included
 
 const fileFilter = (req, file, cb) => {
   if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg') {

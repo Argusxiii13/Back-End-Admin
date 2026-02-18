@@ -4,6 +4,13 @@ module.exports = (deps) => {
   const router = express.Router();
   const { pool, dbPool, io, upload, sendEmailHandler, sendEmailNotif, sendEmailInvoice, generateInvoicePDF, notifyClient, notifyAdmin, emitAdminNotification, logAction, retryPgOperation, validatePassword, bcrypt, crypto, otps, nodemailer, axios } = deps;
 
+function calculateRentalDays(pickupDate, returnDate) {
+  const start = new Date(pickupDate);
+  const end = new Date(returnDate);
+  const timeDiff = end - start;
+  return Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+}
+
 router.use((req, res, next) => {
   if (req.url.startsWith('/api/admin/bookings/')) {
     req.url = req.url.replace('/api/admin/bookings/', '/api/admin/booking/');
