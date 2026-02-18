@@ -5,6 +5,8 @@ const cors = require("cors");
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const { Server } = require('socket.io');
 const sendEmailHandler = require("./sendEmail.js");
 const sendEmailNotif = require("./sendEmailNotif");
 const { generateInvoicePDF } = require('./lib/generatePDF');
@@ -32,9 +34,25 @@ app.use(express.static(path.join(__dirname, 'admin')));
 
 const dbPool = new Pool({ connectionString: process.env.NEON_URL });
 
+// Create HTTP server and Socket.io setup
+const httpServer = http.createServer(app);
+const socketCorsOrigin = allowedOrigin && allowedOrigin !== '*' ? allowedOrigin : '*';
+const io = new Server(httpServer, {
+  cors: {
+    origin: socketCorsOrigin,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+  }
+});
+
+io.on('connection', (socket) => {
+  socket.on('join-admin-room', (adminId) => {
+    if (!adminId) return;
+    socket.join(`admin:${adminId}`);
+  });
+});
 
 
-app.use(express.json({ limit: '50mb' }));
+
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(cors({
@@ -79,7 +97,7 @@ process.on('SIGINT', () => {
 });
 
 // Start the server
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
   
 });
@@ -158,11 +176,28 @@ const notifyClient = async (booking_id, user_id, title, message, admin_role) => 
           'INSERT INTO notifications_client (booking_id, user_id, title, message) VALUES ($1, $2, $3, $4)',
           [booking_id, user_id, title, message]
       );
+      
+      // Emit real-time update to client via socket.io
+      io.to(`user:${user_id}`).emit('admin:data-updated', {
+        type: 'notification_created',
+        user_id,
+        booking_id,
+        notification: { title, message, created_at: new Date() }
+      });
   } catch (error) {
       console.error('Error Sending Notif', error);
   } finally {
       client.release();
   }
+};
+
+// Function to emit admin notifications via socket.io
+const emitAdminNotification = (adminId, notification) => {
+  io.to(`admin:${adminId}`).emit('admin:notification-update', {
+    type: 'notification_created',
+    admin_id: adminId,
+    notification
+  });
 };
 
 //===============================================================================================
