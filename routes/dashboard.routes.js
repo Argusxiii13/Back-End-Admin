@@ -9,12 +9,11 @@ router.get('/api/admin/dashboard/new-bookings', async (req, res) => {
   const pool = dbPool;
 
   try {
-      const today = new Date().toLocaleDateString('en-CA');
       const result = await pool.query(`
           SELECT COUNT(*) AS total 
           FROM bookings
-          WHERE DATE(created_at) = $1
-      `, [today]);
+      WHERE (created_at AT TIME ZONE 'Asia/Manila')::date = (NOW() AT TIME ZONE 'Asia/Manila')::date
+    `);
 
       const newBookings = result.rows[0].total;
       res.json({ total: newBookings });
@@ -30,13 +29,12 @@ router.get('/api/admin/dashboard/new-users', async (req, res) => {
     const { role } = req.query;
 
   const pool = dbPool;
-    const today = new Date().toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD format
 
     const result = await pool.query(`
       SELECT COUNT(*) AS total 
       FROM users 
-      WHERE DATE(created_at) = $1
-    `, [today]);
+      WHERE (created_at AT TIME ZONE 'Asia/Manila')::date = (NOW() AT TIME ZONE 'Asia/Manila')::date
+    `);
 
     const newUsers = result.rows[0].total;
     res.json({ total: newUsers });
@@ -52,13 +50,12 @@ router.get('/api/admin/dashboard/new-feedback-count', async (req, res) => {
     const { role } = req.query;
 
   const pool = dbPool;
-    const today = new Date().toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD format
 
     const result = await pool.query(`
       SELECT COUNT(*) AS total 
       FROM feedback 
-      WHERE DATE(created_at) = $1
-    `, [today]);
+      WHERE (created_at AT TIME ZONE 'Asia/Manila')::date = (NOW() AT TIME ZONE 'Asia/Manila')::date
+    `);
 
     const newFeedbackCount = result.rows[0].total;
     
@@ -75,14 +72,13 @@ router.get('/api/admin/dashboard/today-revenue', async (req, res) => {
     const { role } = req.query;
 
   const pool = dbPool;
-    const today = new Date().toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD format
 
     const result = await pool.query(`
       SELECT SUM(price) AS total_revenue 
       FROM bookings 
-      WHERE DATE(created_at) = $1 
+      WHERE (created_at AT TIME ZONE 'Asia/Manila')::date = (NOW() AT TIME ZONE 'Asia/Manila')::date
       AND status IN ('Finished', 'Confirmed')
-    `, [today]);
+    `);
 
     const todayRevenueRaw = result.rows[0]?.total_revenue;
     const todayRevenue = Number.parseFloat(todayRevenueRaw ?? '0');
@@ -99,16 +95,12 @@ router.get('/api/admin/dashboard/category-distribution', async (req, res) => {
 
   const { role } = req.query;
   const pool = dbPool;try {
-      const today = new Date();
-      const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
-      const formattedDate = today.toLocaleDateString('en-CA', options).split('/').reverse().join('-'); // Format as 'YYYY-MM-DD'
-
       const result = await pool.query(`
           SELECT status, COUNT(*) AS count 
           FROM bookings 
-          WHERE DATE(created_at) = $1
+      WHERE (created_at AT TIME ZONE 'Asia/Manila')::date = (NOW() AT TIME ZONE 'Asia/Manila')::date
           GROUP BY status
-      `, [formattedDate]);
+    `);
       
       const categoryData = result.rows.map(row => ({
           name: row.status,
@@ -168,7 +160,7 @@ router.get('/api/admin/dashboard/earnings-today', async (req, res) => {
           SELECT b.booking_id, c.plate_num, b.price
           FROM bookings_view b
           JOIN cars_view c ON b.car_id = c.id
-          WHERE DATE(b.created_at) = CURRENT_DATE
+      WHERE (b.created_at AT TIME ZONE 'Asia/Manila')::date = (NOW() AT TIME ZONE 'Asia/Manila')::date
           AND b.priceaccepted = true
           ORDER BY b.created_at DESC;
       `);
