@@ -631,7 +631,6 @@ router.get('/api/admin/booking/line-graph', async (req, res) => {
           ORDER BY date
       `);
 
-      console.log(result.rows);
       res.json(result.rows); // Send raw data without processing
   } catch (error) {
       console.error('Error fetching booking data:', error);

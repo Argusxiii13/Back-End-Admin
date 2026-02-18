@@ -45,8 +45,6 @@ router.post('/api/admin/login-otp', async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
-
-    console.log('Admin Login OTP sent successfully');
     return res.status(200).json({ message: 'OTP sent successfully' });
   } catch (error) {
     console.error('Admin Login OTP error:', error);
@@ -59,7 +57,6 @@ router.post('/api/admin/verify-login-otp', async (req, res) => {
   const { email, otp } = req.body;
 
   if (!email || !otp) {
-      console.log('Validation Error: Missing email or OTP');
       return res.status(400).json({ message: 'Email and OTP are required' });
   }
 
@@ -67,13 +64,11 @@ router.post('/api/admin/verify-login-otp', async (req, res) => {
       const storedOtpData = otps[email]; // Retrieve stored OTP data here
 
       if (!storedOtpData) {
-          console.log(`No OTP found for email: ${email}`);
           return res.status(400).json({ message: 'No OTP found. Please request a new OTP.' });
       }
 
       const currentTime = Date.now();
       if (currentTime - storedOtpData.createdAt > 10 * 60 * 1000) {
-          console.log(`OTP expired for email: ${email}`);
           delete otps[email];
           return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
       }
@@ -100,7 +95,6 @@ router.post('/api/admin/verify-login-otp', async (req, res) => {
               }
           });
       } else {
-          console.log(`Invalid OTP for email: ${email}`);
           return res.status(400).json({ message: 'Invalid OTP' });
       }
   } catch (error) {
@@ -113,8 +107,6 @@ router.post('/api/admin/verify-login-otp', async (req, res) => {
 router.post('/api/validate-token', async (req, res) => {
   const { token } = req.body;
 
-  console.log('Token Validation Request:', token);
-
   try {
     const result = await dbPool.query(
       'SELECT id, email, role FROM admin_users WHERE last_token = $1', 
@@ -122,7 +114,6 @@ router.post('/api/validate-token', async (req, res) => {
     );
 
     if (result.rows.length > 0) {
-      console.log('Token Validation Success');
       return res.status(200).json({ 
         valid: true,
         user: {
@@ -132,7 +123,6 @@ router.post('/api/validate-token', async (req, res) => {
         }
       });
     } else {
-      console.log('Token Validation Failed: No matching user');
       return res.status(401).json({ valid: false, message: 'Invalid token' });
     }
   } catch (error) {

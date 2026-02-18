@@ -264,7 +264,6 @@ router.post('/api/admin/fleet/add', async (req, res) => {
 router.put('/api/admin/fleet/update/:id', async (req, res) => {
 
   const vehicleId = parseInt(req.params.id, 10);
-  console.log(vehicleId); 
   const { 
       brand, 
       model, 
@@ -329,7 +328,6 @@ router.put('/api/admin/fleet/update/:id', async (req, res) => {
       });
   } catch (error) {
       console.error('Error updating car:', error);
-      console.log(req.params.id);
       res.status(500).json({ 
           message: 'Error updating car',
           error: error.message  

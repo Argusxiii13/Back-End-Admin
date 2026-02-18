@@ -9,13 +9,12 @@ router.get('/api/admin/dashboard/new-bookings', async (req, res) => {
   const pool = dbPool;
 
   try {
-    const currentTimestamp = new Date();
-      console.log(currentTimestamp);
+      const today = new Date().toLocaleDateString('en-CA');
       const result = await pool.query(`
           SELECT COUNT(*) AS total 
           FROM bookings
-          WHERE created_at = $1
-      `, [currentTimestamp]);
+          WHERE DATE(created_at) = $1
+      `, [today]);
 
       const newBookings = result.rows[0].total;
       res.json({ total: newBookings });
@@ -85,8 +84,10 @@ router.get('/api/admin/dashboard/today-revenue', async (req, res) => {
       AND status IN ('Finished', 'Confirmed')
     `, [today]);
 
-    const todayRevenue = result.rows[0]?.total_revenue || 0; // Default to 0 if null
-    res.json({ total: todayRevenue.toFixed(2) }); // Format to 2 decimal places
+    const todayRevenueRaw = result.rows[0]?.total_revenue;
+    const todayRevenue = Number.parseFloat(todayRevenueRaw ?? '0');
+    const safeRevenue = Number.isFinite(todayRevenue) ? todayRevenue : 0;
+    res.json({ total: safeRevenue.toFixed(2) });
   } catch (error) {
     console.error('Error fetching today\'s revenue:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -133,8 +134,7 @@ router.get('/api/admin/dashboard/booking-today', async (req, res) => {
           AND DATE(return_date) >= CURRENT_DATE
           ORDER BY created_at DESC;
       `);
-      
-      console.log('Fetched Bookings:', result.rows); // Log the fetched bookings
+
       res.json(result.rows);
   } catch (error) {
       console.error('Error fetching booking stats:', error);
@@ -173,7 +173,6 @@ router.get('/api/admin/dashboard/earnings-today', async (req, res) => {
           ORDER BY b.created_at DESC;
       `);
 
-      console.log('Fetched Earnings:', result.rows); // Log the fetched earnings
       res.json(result.rows);
   } catch (error) {
       console.error('Error fetching earnings:', error);

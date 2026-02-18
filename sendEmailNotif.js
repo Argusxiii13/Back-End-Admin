@@ -145,9 +145,7 @@ const sendEmailNotif = async (title, message, clientEmail) => {
             }),
         };
 
-        console.log(`succesfully sent email`);
         await transporter.sendMail(mailOptions);
-        console.log('Email sent to client successfully');
     } catch (error) {
         console.error('Error Sending Email Notification', error);
     }

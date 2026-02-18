@@ -30,16 +30,33 @@ const getNotifications = async (req, res) => {
   const pool = dbPool;
 
   try {
-      const result = await pool.query(`
-          SELECT *
-          FROM notifications_admin_view
-          ORDER BY created_at DESC;
-      `);
-      
-      res.json(result.rows);
+    const result = await pool.query(`
+      SELECT *
+      FROM notifications_admin_view
+      ORDER BY created_at DESC;
+    `);
+
+    return res.json(result.rows);
   } catch (error) {
+    const isMissingView = error && error.code === '42P01';
+
+    if (!isMissingView) {
       console.error('Error fetching notifications_admin:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+
+    try {
+      const fallbackResult = await pool.query(`
+        SELECT *
+        FROM notifications_admin
+        ORDER BY created_at DESC;
+      `);
+
+      return res.json(fallbackResult.rows);
+    } catch (fallbackError) {
+      console.error('Error fetching notifications_admin fallback:', fallbackError);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
   }
 };
 

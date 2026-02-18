@@ -23,7 +23,6 @@ async function verifyCaptcha(solution) {
         });
 
         const data = await response.json();
-        console.log('Captcha verification response:', data);
         return data;
     } catch (error) {
         console.error('Error verifying captcha:', error);
@@ -32,10 +31,8 @@ async function verifyCaptcha(solution) {
 }
 
 const sendEmailHandler = async (req, res) => {
-    console.log('Received request:', req.body);
-    
+
     if (req.method !== 'POST') {
-        console.log(`Method not allowed: ${req.method}`);
         res.setHeader('Allow', ['POST']);
         return res.status(405).end(`Method ${req.method} Not Allowed`);
     }
@@ -43,13 +40,11 @@ const sendEmailHandler = async (req, res) => {
     const { name, email, phone, inquiry, captchaSolution } = req.body;
 
     if (!captchaSolution) {
-        console.log('Captcha solution is missing.');
         return res.status(400).json({ message: 'Captcha solution is required' });
     }
 
     try {
         const captchaVerification = await verifyCaptcha(captchaSolution);
-        console.log('Captcha verification response:', captchaVerification);
 
         if (!captchaVerification.success) {
             console.error('Captcha verification failed:', captchaVerification.errors);
@@ -74,7 +69,6 @@ const sendEmailHandler = async (req, res) => {
         };
 
         await transporter.sendMail(inquiryMailOptions);
-        console.log('Inquiry email sent successfully');
 
         const confirmationMailOptions = {
             from: SMTP_USER,
@@ -84,7 +78,6 @@ const sendEmailHandler = async (req, res) => {
         };
 
         await transporter.sendMail(confirmationMailOptions);
-        console.log('Confirmation email sent successfully');
 
         res.status(200).json({ message: 'Inquiry sent and confirmation email sent successfully' });
     } catch (error) {

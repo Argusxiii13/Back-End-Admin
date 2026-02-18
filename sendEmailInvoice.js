@@ -122,7 +122,6 @@ async function sendEmailInvoice(invoiceData, clientEmail) {
         };
 
         await transporter.sendMail(mailOptions);
-        console.log('Invoice email sent to client successfully');
     } catch (error) {
         console.error('Error Sending Invoice Email', error);
     }

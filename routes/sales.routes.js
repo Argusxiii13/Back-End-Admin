@@ -99,7 +99,6 @@ router.get('/api/admin/sales/car-details', async (req, res) => {
   try {
       const result = await pool.query('SELECT * FROM cars_view');
       const cars = result.rows;
-      console.log(cars)
       res.json(cars);
   } catch (error) {
       console.error('Error fetching car data:', error);

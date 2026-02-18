@@ -25,7 +25,7 @@ const otps = {};
 app.use(express.static(path.join(__dirname, 'admin')));
 
 
-const dbPool = new Pool({ connectionString: process.env.NEON_URL });
+const dbPool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const httpServer = http.createServer(app);
 const socketCorsOrigin = allowedOrigin && allowedOrigin !== '*' ? allowedOrigin : '*';
